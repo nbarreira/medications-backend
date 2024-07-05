@@ -19,7 +19,7 @@ python3 -m pip install -f requeriments.txt
 Execute the following script from the terminal:
 
 ```
-python3 model.py --init
+python3 sql_app/utils.py
 ```
 
 # Run the server
