@@ -14,12 +14,4 @@ python3 -m pip install -f requeriments.txt
 
 
 
-## Create the database
-
-Execute the following script from the terminal:
-
-```
-python3 sql_app/utils.py
-```
-
 # Run the server

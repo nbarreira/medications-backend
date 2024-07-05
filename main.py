@@ -93,13 +93,14 @@ def update_medication(patient_id: int, medication_id: int, medication: Medicatio
 # Delete data
 
 @app.delete("/patients/{patient_id}")
-def delete_patient(patient_id: int, session: Session = Depends(get_session)):
-    pass
+def delete_patients(patient_id: int, session: Session = Depends(get_session)):
+    delete_patient(session, patient_id)
+    return patient_id
 
 @app.delete(("/patients/{patient_id}/medications/{medication_id}"))
-def delete_medication(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
+def delete_medications(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
     pass
 
 @app.delete(("/patients/{patient_id}/medications/{medication_id}/posologies/{posology_id}"))
-def delete_posology(patient_id: int, medication_id: int, posology_id: int, session: Session = Depends(get_session)):
+def delete_posologies(patient_id: int, medication_id: int, posology_id: int, session: Session = Depends(get_session)):
     pass

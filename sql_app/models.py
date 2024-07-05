@@ -9,7 +9,7 @@ class Patient(SQLModel, table=True):
     username: str
     name: Optional[str]  = None
     surname: Optional[str] = None
-    medications: list["Medication"] = Relationship(back_populates="patient")
+    medications: list["Medication"] = Relationship(back_populates="patient", sa_relationship_kwargs={"cascade": "delete"})
 
 class Medication(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -19,13 +19,13 @@ class Medication(SQLModel, table=True):
     treatment_duration: int = Field(default=1)
     patient_id: int = Field(foreign_key="patient.id")
     patient: Patient = Relationship(back_populates="medications")
-    posology: list["Posology"] = Relationship(back_populates="medication")
+    posology: list["Posology"] = Relationship(back_populates="medication", sa_relationship_kwargs={"cascade": "delete"})
 
  
 class Posology(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    hour: int = Field(primary_key=True)
-    minute: int = Field(primary_key=True)
-    medication_id: int = Field(foreign_key="medication.id", primary_key=True)
+    hour: int
+    minute: int
+    medication_id: int = Field(foreign_key="medication.id")
     medication: Medication = Relationship(back_populates="posology")
 
