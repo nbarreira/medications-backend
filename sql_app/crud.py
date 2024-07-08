@@ -41,8 +41,6 @@ def find_medications(session: Session, patient_id: int, medication_id: int = Non
             Medication.id == medication_id)
         results = session.exec(statement)
         medication = results.first()
-        if medication is not None:
-            medication.posology
         return medication
     else:
         statement = select(Medication).where(
