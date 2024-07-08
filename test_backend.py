@@ -10,7 +10,7 @@ class TestPatient:
 
     def test_create(self):
         request = requests.post(
-            TestPatient.url,
+            self.url,
             json={
                 'name': 'Name 1',
                 'surname': 'Surname 1',
@@ -19,7 +19,7 @@ class TestPatient:
         assert request.status_code == 201
 
         request = requests.post(
-            TestPatient.url,
+            self.url,
             json={
                 'name': 'Name 2',
                 'surname': 'Surname 2',
@@ -28,7 +28,7 @@ class TestPatient:
         assert request.status_code == 201
 
         request = requests.post(
-            TestPatient.url,
+            self.url,
             json={
                 'name': 'Name 3',
                 'surname': 'Surname 3',
@@ -38,7 +38,7 @@ class TestPatient:
 
     def test_create_error(self):
         request = requests.post(
-            TestPatient.url,
+            self.url,
             json={
                 'name': 'Name 1',
                 'surname': 'Surname 1',
@@ -48,7 +48,7 @@ class TestPatient:
 
     def test_update(self):
         username = 'username2'
-        url_1 = f"{TestPatient.url}?username={username}"
+        url_1 = f"{self.url}?username={username}"
         request = requests.get(url_1)
         assert request.status_code == 200
         data = request.json()
@@ -70,7 +70,7 @@ class TestPatient:
         assert data['name'] == 'Name 222'
 
     def test_update_error(self):
-        url = f"{TestPatient.url}/{TestPatient.non_existent_patient}"
+        url = f"{self.url}/{self.non_existent_patient}"
         request = requests.put(
             url,
             json={
@@ -82,13 +82,13 @@ class TestPatient:
 
     def test_remove(self):
         username = 'username3'
-        url_1 = f"{TestPatient.url}?username={username}"
+        url_1 = f"{self.url}?username={username}"
         request = requests.get(url_1)
         assert request.status_code == 200
         data = request.json()
         assert data["username"] == username
 
-        url_2 = f"{TestPatient.url}/{data['id']}"
+        url_2 = f"{self.url}/{data['id']}"
         request = requests.delete(url_2)
         assert request.status_code == 204
 
@@ -96,7 +96,7 @@ class TestPatient:
         assert request.status_code == 404
 
     def test_remove_error(self, teardown_method):
-        url = f"{TestPatient.url}/{TestPatient.non_existent_patient}"
+        url = f"{self.url}/{self.non_existent_patient}"
         request = requests.delete(url)
         assert request.status_code == 404
 
@@ -104,17 +104,17 @@ class TestPatient:
     def teardown_method(self):
         yield "Runing teardown code"
         username = 'username1'
-        url_1 = f"{TestPatient.url}?username={username}"
+        url_1 = f"{self.url}?username={username}"
         request = requests.get(url_1)
         data = request.json()
-        url_2 = f"{TestPatient.url}/{data['id']}"
+        url_2 = f"{self.url}/{data['id']}"
         request = requests.delete(url_2)
 
         username = 'username2'
-        url_1 = f"{TestPatient.url}?username={username}"
+        url_1 = f"{self.url}?username={username}"
         request = requests.get(url_1)
         data = request.json()
-        url_2 = f"{TestPatient.url}/{data['id']}"
+        url_2 = f"{self.url}/{data['id']}"
         request = requests.delete(url_2)
 
 
@@ -125,7 +125,7 @@ class TestMedication:
     @pytest.fixture(scope="class")
     def setup_teardown_method(self):
         request = requests.post(
-            TestPatient.url,
+            self.base_url,
             json={
                 'name': 'Name 3',
                 'surname': 'Surname 3',
@@ -134,7 +134,7 @@ class TestMedication:
         data = request.json()
         patient_id_1 = data["id"]
         request = requests.post(
-            TestPatient.url,
+            self.base_url,
             json={
                 'name': 'Name 4',
                 'surname': 'Surname 4',
@@ -143,12 +143,12 @@ class TestMedication:
         data = request.json()
         patient_id_2 = data["id"]
         yield patient_id_1, patient_id_2
-        request = requests.delete(f"{TestPatient.url}/{patient_id_1}")
-        request = requests.delete(f"{TestPatient.url}/{patient_id_2}")
+        request = requests.delete(f"{self.base_url}/{patient_id_1}")
+        request = requests.delete(f"{self.base_url}/{patient_id_2}")
 
     def test_create(self, setup_teardown_method):
         patient_id_1, patient_id_2 = setup_teardown_method
-        url = f"{TestMedication.base_url}/{patient_id_1}/medications"
+        url = f"{self.base_url}/{patient_id_1}/medications"
         request = requests.post(
             url,
             json={
@@ -168,7 +168,7 @@ class TestMedication:
             })
         assert request.status_code == 201
 
-        url = f"{TestMedication.base_url}/{patient_id_2}/medications"
+        url = f"{self.base_url}/{patient_id_2}/medications"
         request = requests.post(
             url,
             json={
@@ -180,7 +180,7 @@ class TestMedication:
         assert request.status_code == 201
 
     def test_create_error(self):
-        url = f"{TestMedication.base_url}/{self.non_existent_patient}/medications"
+        url = f"{self.base_url}/{self.non_existent_patient}/medications"
         request = requests.post(
             url,
             json={
@@ -203,27 +203,27 @@ class TestMedication:
 
     def test_find(self, setup_teardown_method):
         patient_id_1, patient_id_2 = setup_teardown_method
-        url = f"{TestMedication.base_url}/{patient_id_1}/medications"
+        url = f"{self.base_url}/{patient_id_1}/medications"
         request = requests.get(url)
         assert request.status_code == 200
         data = request.json()
         assert len(data) == 2
 
         medication_id = data[0]["id"]
-        url = f"{TestMedication.base_url}/{patient_id_1}/medications/{medication_id}"
+        url = f"{self.base_url}/{patient_id_1}/medications/{medication_id}"
         request = requests.get(url)
         assert request.status_code == 200
         data = request.json()
         assert data["id"] == medication_id and data["name"] == "Med1" and data["patient_id"] == patient_id_1
 
-        url = f"{TestMedication.base_url}/{patient_id_2}/medications/{medication_id}"
+        url = f"{self.base_url}/{patient_id_2}/medications/{medication_id}"
         request = requests.get(url)
         assert request.status_code == 404
       
     def test_update(self, setup_teardown_method):
         patient_id_1, patient_id_2 = setup_teardown_method
 
-        url = f"{TestMedication.base_url}/{patient_id_1}/medications"
+        url = f"{self.base_url}/{patient_id_1}/medications"
         request = requests.get(url)
         assert request.status_code == 200
         data = request.json()
@@ -231,7 +231,7 @@ class TestMedication:
 
         medication_id = data[0]["id"]
 
-        url = f"{TestMedication.base_url}/{patient_id_1}/medications/{medication_id}"
+        url = f"{self.base_url}/{patient_id_1}/medications/{medication_id}"
         request = requests.put(
             url,
             json={
@@ -247,7 +247,7 @@ class TestMedication:
         data = request.json()
         assert data["id"] == medication_id and data["dosage"] == 2.0 and data["treatment_duration"] == 5
 
-        url = f"{TestMedication.base_url}/{patient_id_2}/medications/{medication_id}"
+        url = f"{self.base_url}/{patient_id_2}/medications/{medication_id}"
         request = requests.put(
             url,
             json={
@@ -262,7 +262,7 @@ class TestMedication:
     def test_remove(self, setup_teardown_method):
         patient_id_1, patient_id_2 = setup_teardown_method
 
-        url = f"{TestMedication.base_url}/{patient_id_1}/medications"
+        url = f"{self.base_url}/{patient_id_1}/medications"
         request = requests.get(url)
         assert request.status_code == 200
         data = request.json()
@@ -270,11 +270,11 @@ class TestMedication:
 
         medication_id = data[0]["id"]
 
-        url = f"{TestMedication.base_url}/{patient_id_1}/medications/{medication_id}"
+        url = f"{self.base_url}/{patient_id_1}/medications/{medication_id}"
         request = requests.delete(url)
         assert request.status_code == 204
         
-        url = f"{TestMedication.base_url}/{patient_id_2}/medications/{medication_id}"
+        url = f"{self.base_url}/{patient_id_2}/medications/{medication_id}"
         request = requests.delete(url)
         assert request.status_code == 404
 
@@ -288,7 +288,7 @@ class TestPosology:
     @pytest.fixture(scope="class")
     def setup_teardown_method(self):
         request = requests.post(
-            TestPatient.url,
+            self.base_url,
             json={
                 'name': 'Name 5',
                 'surname': 'Surname 5',
@@ -310,7 +310,7 @@ class TestPosology:
         medicine_id = data["id"]
 
         yield patient_id, medicine_id
-        request = requests.delete(f"{TestPatient.url}/{patient_id}")
+        request = requests.delete(f"{self.base_url}/{patient_id}")
 
     def test_create(self, setup_teardown_method):
         patient_id, medicine_id = setup_teardown_method
