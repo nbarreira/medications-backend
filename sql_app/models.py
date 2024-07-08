@@ -30,4 +30,11 @@ class Posology(SQLModel, table=True):
     minute: int
     medication_id: int = Field(foreign_key="medication.id")
     medication: Medication = Relationship(back_populates="posology")
+    intakes: list["Intake"] = Relationship(back_populates="posology", sa_relationship_kwargs={"cascade": "delete"})
 
+
+class Intake(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    date: str
+    posology_id: int = Field(foreign_key="posology.id")
+    posology: Posology = Relationship(back_populates="intakes")

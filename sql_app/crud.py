@@ -31,7 +31,10 @@ def find_patient(session: Session, **kwargs):
         results = session.exec(statement)
         patient = results.first()
         return patient
-    return None
+    statement = select(Patient)
+    results = session.exec(statement)
+    patients = results.all()
+    return patients
 
 
 def find_medications(session: Session, patient_id: int, medication_id: int = None):

@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import datetime
 
 from sql_app.database import get_session
-from sql_app.models import Patient, Medication, Posology, Message
+from sql_app.models import Patient, Medication, Posology, Message, Intake
 from sql_app.utils import create_db_and_tables
 from sql_app.crud import *
 from sqlmodel import Session
@@ -78,6 +78,7 @@ def add_posology(patient_id: int, medication_id: int, posology: Posology, sessio
 
 
 # Retrieve data
+
 @app.get("/patients/{patient_id}",
          responses={200: {"model": Patient}, 404: {"model": Message}})
 def get_patient(patient_id: int, session: Session = Depends(get_session)):
@@ -89,8 +90,8 @@ def get_patient(patient_id: int, session: Session = Depends(get_session)):
 
 
 @app.get("/patients",
-         responses={200: {"model": Patient}, 404: {"model": Message}})
-def get_patient_by_username(username: str, session: Session = Depends(get_session)):
+         responses={200: {"model": Patient | list[Patient]}, 404: {"model": Message}})
+def get_patient_by_username(username: str = None, session: Session = Depends(get_session)):
     patient = find_patient(session, username=username)
     if patient is not None:
         return patient
@@ -177,3 +178,21 @@ def delete_posologies(patient_id: int, medication_id: int, posology_id: int, ses
     if not remove_posology(session, patient_id, medication_id, posology_id):
         raise HTTPException(
             status_code=404, detail=f"Posology {posology_id} not found for patient {patient_id} and medication {medication_id}")
+
+
+@app.post("/patients/{patient_id}/medications/{medication_id}/posologies/{posology_id}/intakes")
+def add_intake(patient_id: int, medication_id: int, posology_id: int, intake: Intake, session: Session = Depends(get_session)):
+    pass
+
+@app.delete("/patients/{patient_id}/medications/{medication_id}/posologies/{posology_id}/intakes/{intake_id}")
+def delete_intake(patient_id: int, medication_id: int, posology_id: int, intake_id: int, session: Session = Depends(get_session)):
+    pass
+
+@app.get("/patients/{patient_id}/medications/{medication_id}/intakes")
+def get_intakes_by_medicine(patient_id: int, medication_id: int, start_date: str = None, end_date: str = None, session: Session = Depends(get_session)):
+    pass
+
+
+@app.get("/patient/{patient_id}/intakes")
+def get_intakes_by_patient(patient_id: int,  start_date: str = None, end_date: str = None, session: Session = Depends(get_session)):
+    pass

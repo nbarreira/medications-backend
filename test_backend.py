@@ -9,6 +9,7 @@ class TestPatient:
     non_existent_patient = '999999999999'
 
     def test_create(self):
+       
         request = requests.post(
             self.url,
             json={
@@ -35,6 +36,12 @@ class TestPatient:
                 'username': 'username3'
             })
         assert request.status_code == 201
+
+    def test_find(self):
+        request = requests.get(self.url)
+        assert request.status_code == 200
+        data = request.json()
+        assert len(data) == 3
 
     def test_create_error(self):
         request = requests.post(
@@ -373,60 +380,55 @@ class TestPosology:
         data = request.json()
         assert len(data) == 2
 
-        url = f"{self.base_url}/{patient_id}/medications/{medicine_id}"
+       
+
+
+    def test_find_error(self, setup_teardown_method):
+        patient_id, medicine_id = setup_teardown_method
+        url = f"{self.base_url}/{self.non_existent_patient}/medications/{medicine_id}/posologies"
         request = requests.get(url)
+        assert request.status_code == 404
+        url = f"{self.base_url}/{patient_id}/medications/{self.non_existent_medicine}/posologies"
+        request = requests.get(url)
+        assert request.status_code == 404
+       
+    def test_remove(self, setup_teardown_method):
+        patient_id, medicine_id = setup_teardown_method
+        url_1 = f"{self.base_url}/{patient_id}/medications/{medicine_id}/posologies"
+        request = requests.get(url_1)
         assert request.status_code == 200
         data = request.json()
-        print(data)
-        assert len(data['posology']) == 2
+        assert len(data) > 0
+        posology_id = data[0]["id"]
 
+        url_2 = f"{url_1}/{posology_id}"
+        request = requests.delete(url_2)
+        assert request.status_code == 204
 
-    # def test_find_error(self, setup_teardown_method):
-    #     patient_id, medicine_id = setup_teardown_method
-    #     url = f"{self.base_url}/{self.non_existent_patient}/medications/{medicine_id}/posologies"
-    #     request = requests.get(url)
-    #     assert request.status_code == 404
-    #     url = f"{self.base_url}/{patient_id}/medications/{self.non_existent_medicine}/posologies"
-    #     request = requests.get(url)
-    #     assert request.status_code == 404
-       
-    # def test_remove(self, setup_teardown_method):
-    #     patient_id, medicine_id = setup_teardown_method
-    #     url_1 = f"{self.base_url}/{patient_id}/medications/{medicine_id}/posologies"
-    #     request = requests.get(url_1)
-    #     assert request.status_code == 200
-    #     data = request.json()
-    #     assert len(data) > 0
-    #     posology_id = data[0]["id"]
+        request = requests.get(url_1)
+        assert request.status_code == 200
+        data = request.json()
+        assert len(data) == 1
 
-    #     url_2 = f"{url_1}/{posology_id}"
-    #     request = requests.delete(url_2)
-    #     assert request.status_code == 204
+    def test_remove_error(self, setup_teardown_method):
+        patient_id, medicine_id = setup_teardown_method
+        url_1 = f"{self.base_url}/{patient_id}/medications/{medicine_id}/posologies"
+        request = requests.get(url_1)
+        assert request.status_code == 200
+        data = request.json()
+        assert len(data) > 0
+        posology_id = data[0]["id"]
 
-    #     request = requests.get(url_1)
-    #     assert request.status_code == 200
-    #     data = request.json()
-    #     assert len(data) == 1
+        url_2 = f"{url_1}/{self.non_existent_posology}"
+        request = requests.delete(url_2)
+        assert request.status_code == 404
 
-    # def test_remove_error(self, setup_teardown_method):
-    #     patient_id, medicine_id = setup_teardown_method
-    #     url_1 = f"{self.base_url}/{patient_id}/medications/{medicine_id}/posologies"
-    #     request = requests.get(url_1)
-    #     assert request.status_code == 200
-    #     data = request.json()
-    #     assert len(data) > 0
-    #     posology_id = data[0]["id"]
+        url_3 = f"{self.base_url}/{self.non_existent_patient}/medications/{medicine_id}/posologies/{posology_id}"
+        request = requests.delete(url_3)
+        assert request.status_code == 404
 
-    #     url_2 = f"{url_1}/{self.non_existent_posology}"
-    #     request = requests.delete(url_2)
-    #     assert request.status_code == 404
-
-    #     url_3 = f"{self.base_url}/{self.non_existent_patient}/medications/{medicine_id}/posologies/{posology_id}"
-    #     request = requests.delete(url_3)
-    #     assert request.status_code == 404
-
-    #     url_4 = f"{self.base_url}/{patient_id}/medications/{self.non_existent_medicine}/posologies/{posology_id}"
-    #     request = requests.delete(url_4)
-    #     assert request.status_code == 404
+        url_4 = f"{self.base_url}/{patient_id}/medications/{self.non_existent_medicine}/posologies/{posology_id}"
+        request = requests.delete(url_4)
+        assert request.status_code == 404
 
 
