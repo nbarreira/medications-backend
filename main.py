@@ -1,15 +1,14 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-
-# from typing import List
-# from pydantic import BaseModel
+import datetime
 
 from sql_app.database import get_session
 from sql_app.models import Patient, Medication, Posology
 from sql_app.utils import create_db_and_tables
 from sql_app.crud import *
 from sqlmodel import Session
+
 
 
 @asynccontextmanager
@@ -48,23 +47,27 @@ def register_patient(patient: Patient, session: Session = Depends(get_session)):
 
 @app.post("/patients/{patient_id}/medications", status_code=201)
 def add_medication(patient_id: int, medication: Medication, session: Session = Depends(get_session)):
-    medication.patient_id = patient_id
-    new_medication = create_medication(session, medication)
-    if new_medication is not None:
-        return new_medication
-    else:
-        raise HTTPException(
-            status_code=422, detail=f"Medication {medication} could not be inserted: invalid data")
+    try:
+        date = datetime.datetime.strptime(medication.start_date, "%Y-%m-%d")
+        medication.patient_id = patient_id
+        new_medication = create_medication(session, medication)
+        if new_medication is not None:
+            return new_medication
+    except ValueError:
+        pass
+    raise HTTPException(
+        status_code=422, detail=f"Medication {medication} could not be inserted: invalid data")
 
 
 @app.post("/patients/{patient_id}/medications/{medication_id}/posologies", status_code=201)
 def add_posology(patient_id: int, medication_id: int, posology: Posology, session: Session = Depends(get_session)):
-    posology.medication_id = medication_id
-    medication = find_medications(session, patient_id, medication_id)
-    if medication is not None:
-        new_posology = create_posology(session, posology)
-        if new_posology is not None:
-            return new_posology
+    if posology.hour >= 0 and posology.hour < 24 and posology.minute >=0 and posology.minute < 60:
+        posology.medication_id = medication_id
+        medication = find_medications(session, patient_id, medication_id)
+        if medication is not None:
+            new_posology = create_posology(session, posology)
+            if new_posology is not None:
+                return new_posology
     raise HTTPException(
         status_code=422, detail=f"Posology {posology} could not be inserted into medication {medication_id} and patient {patient_id}: invalid data")
 
@@ -100,20 +103,25 @@ def get_medication(patient_id: int, medication_id: int, session: Session = Depen
 @app.get("/patients/{patient_id}/medications")
 def get_all_medications(patient_id: int, session: Session = Depends(get_session)):
     medications = find_medications(session, patient_id)
-    return medications
+    if len(medications) > 0:
+        return medications
+    raise HTTPException(status_code=404, detail=f"Medications for {patient_id} not found")
+
 
 
 @app.get("/patients/{patient_id}/medications/{medication_id}/posologies")
-def get_medication(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
+def get_posologies(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
     posologies = find_posologies(session, patient_id, medication_id)
-    return posologies
+    if len(posologies) > 0:
+        return posologies
+    raise HTTPException(status_code=404, detail=f"Posologies for {patient_id} and medication {medication_id} not found")
 
 
 # Update data
 
 @app.put("/patients/{patient_id}", status_code=204)
 def update_patient(patient_id: int, patient: Patient, session: Session = Depends(get_session)):
-    patient.patient_id = patient_id
+    patient.id = patient_id
     if not update_patient_data(session, patient):
         raise HTTPException(status_code=404, detail=f"Patient {patient_id} could not be updated")
 
@@ -129,7 +137,8 @@ def update_medication(patient_id: int, medication_id: int, medication: Medicatio
 # Delete data
 @app.delete("/patients/{patient_id}", status_code=204)
 def delete_patients(patient_id: int, session: Session = Depends(get_session)):
-    remove_patient(session, patient_id)
+    if not remove_patient(session, patient_id):
+        raise HTTPException(status_code=404, detail=f"Patient {patient_id} not found")
 
 
 @app.delete(("/patients/{patient_id}/medications/{medication_id}"), status_code=204)

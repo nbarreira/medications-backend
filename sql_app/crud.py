@@ -34,13 +34,15 @@ def find_patient(session: Session, **kwargs):
     return None
 
 
-def find_medications(session: Session, patient_id: int, medication_id: int):
+def find_medications(session: Session, patient_id: int, medication_id: int = None):
     if medication_id is not None:
         statement = select(Medication).where(
-            (Medication.patient_id == patient_id) and (Medication.id == medication_id))
+            Medication.patient_id == patient_id, 
+            Medication.id == medication_id)
         results = session.exec(statement)
         medication = results.first()
-        medication.posology
+        if medication is not None:
+            medication.posology
         return medication
     else:
         statement = select(Medication).where(
@@ -51,10 +53,13 @@ def find_medications(session: Session, patient_id: int, medication_id: int):
 
 
 def find_posologies(session: Session, patient_id: int, medication_id: int):
-    statement = select(Medication, Posology).where(Medication.patient_id ==
-                                                   patient_id and Medication.id == medication_id and Posology.medication_id == medication_id)
+    statement = select(Medication, Posology).where(Medication.patient_id == patient_id, 
+                                                   Medication.id == medication_id, 
+                                                   Posology.medication_id == medication_id)
     results = session.exec(statement)
-    posologies = results.all()
+    posologies = []
+    for _, posology in results.all():
+        posologies.append(posology)
     return posologies
 
 
@@ -82,13 +87,16 @@ def remove_patient(session: Session, patient_id: int):
     statement = select(Patient).where(Patient.id == patient_id)
     results = session.exec(statement)
     patient = results.first()
-    session.delete(patient)
-    session.commit()
+    if patient is not None:
+        session.delete(patient)
+        session.commit()
+        return True
+    return False
 
 
 def remove_medication(session: Session, patient_id: int, medication_id: int):
     statement = select(Medication).where(
-        Medication.id == medication_id and Medication.patient_id == patient_id)
+        Medication.id == medication_id, Medication.patient_id == patient_id)
     results = session.exec(statement)
     patient = results.first()
     if patient is not None:
@@ -99,18 +107,22 @@ def remove_medication(session: Session, patient_id: int, medication_id: int):
 
 
 def remove_posology(session: Session, patient_id: int, medication_id: int, posology_id: int):
-    statement = select(Medication, Posology).where(Medication.id == medication_id and Medication.patient_id ==
-                                                   patient_id and Posology.id == posology_id and Posology.medication_id == medication_id)
+    statement = select(Medication, Posology).where(Medication.id == medication_id, 
+                                                   Medication.patient_id == patient_id, 
+                                                   Posology.id == posology_id, 
+                                                   Posology.medication_id == medication_id)
     results = session.exec(statement)
-    posology = results.first()
-    if posology is not None:
+    data = results.first()
+    if data is not None:
+        _, posology = data
         session.delete(posology)
         session.commit()
         return True
     return False
 
+
 def update_patient_data(session: Session, new_patient: Patient):
-    patient = find_patient(session, patient_id=new_patient.patient_id)
+    patient = find_patient(session, patient_id=new_patient.id)
     if patient is not None:
         patient.name = new_patient.name
         patient.surname = new_patient.surname
@@ -121,8 +133,10 @@ def update_patient_data(session: Session, new_patient: Patient):
         return True
     return False
 
+
 def update_medication_data(session: Session, new_medication: Medication):
-    medication = find_medications(session, patient_id = new_medication.patient_id, medication_id=new_medication.id)
+    medication = find_medications(
+        session, patient_id=new_medication.patient_id, medication_id=new_medication.id)
     if medication is not None:
         medication.name = new_medication.name
         medication.dosage = new_medication.dosage
@@ -133,4 +147,3 @@ def update_medication_data(session: Session, new_medication: Medication):
         session.refresh(medication)
         return True
     return False
-        

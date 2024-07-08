@@ -15,7 +15,7 @@ class Medication(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     dosage: float = Field(default=1.0)
-    start_date: int
+    start_date: str
     treatment_duration: int = Field(default=1)
     patient_id: int = Field(foreign_key="patient.id")
     patient: Patient = Relationship(back_populates="medications")
