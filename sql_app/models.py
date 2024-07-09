@@ -21,7 +21,8 @@ class Medication(SQLModel, table=True):
     treatment_duration: int = Field(default=1)
     patient_id: int = Field(foreign_key="patient.id")
     patient: Patient = Relationship(back_populates="medications")
-    posology: list["Posology"] = Relationship(back_populates="medication", sa_relationship_kwargs={"cascade": "delete"})
+    posology: list["Posology"] = Relationship(back_populates="medication_posology", sa_relationship_kwargs={"cascade": "delete"})
+    intakes: list["Intake"] = Relationship(back_populates="medication_intake", sa_relationship_kwargs={"cascade": "delete"})
 
  
 class Posology(SQLModel, table=True):
@@ -29,12 +30,20 @@ class Posology(SQLModel, table=True):
     hour: int
     minute: int
     medication_id: int = Field(foreign_key="medication.id")
-    medication: Medication = Relationship(back_populates="posology")
-    intakes: list["Intake"] = Relationship(back_populates="posology", sa_relationship_kwargs={"cascade": "delete"})
+    medication_posology: Medication = Relationship(back_populates="posology")
 
 
 class Intake(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     date: str
-    posology_id: int = Field(foreign_key="posology.id")
-    posology: Posology = Relationship(back_populates="intakes")
+    medication_id: int = Field(foreign_key="medication.id")
+    medication_intake: Medication = Relationship(back_populates="intakes")
+
+class MedicationIntake(BaseModel):
+    id: int
+    name: str
+    dosage: float
+    start_date: str
+    treatment_duration: int
+    patient_id: int
+    intakes_by_medication: list["Intake"]

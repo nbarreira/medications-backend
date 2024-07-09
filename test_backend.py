@@ -221,6 +221,7 @@ class TestMedication:
         request = requests.get(url)
         assert request.status_code == 200
         data = request.json()
+        print("__________", data)
         assert data["id"] == medication_id and data["name"] == "Med1" and data["patient_id"] == patient_id_1
 
         url = f"{self.base_url}/{patient_id_2}/medications/{medication_id}"

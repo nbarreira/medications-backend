@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError
 
-from .database import engine
-from .models import Patient, Medication, Posology
+from .models import Patient, Medication, Posology, Intake, MedicationIntake
 
 
-def create_patient(session: Session, patient: Patient):
+def insert_patient(session: Session, patient: Patient) -> Patient | None:
     statement = select(Patient).where(Patient.username == patient.username)
     results = session.exec(statement)
     registered_patient = results.first()
@@ -18,7 +19,7 @@ def create_patient(session: Session, patient: Patient):
         return None
 
 
-def find_patient(session: Session, **kwargs):
+def find_patient(session: Session, **kwargs) -> Patient | None | list["Patient"]:
     patient_id = kwargs.get('patient_id', None)
     username = kwargs.get('username', None)
     if patient_id:
@@ -37,26 +38,42 @@ def find_patient(session: Session, **kwargs):
     return patients
 
 
-def find_medications(session: Session, patient_id: int, medication_id: int = None):
-    if medication_id is not None:
-        statement = select(Medication).where(
-            Medication.patient_id == patient_id, 
-            Medication.id == medication_id)
-        results = session.exec(statement)
-        medication = results.first()
-        return medication
-    else:
-        statement = select(Medication).where(
-            (Medication.patient_id == patient_id))
-        results = session.exec(statement)
-        medications = results.all()
-        return medications
+def find_medication(session: Session, patient_id: int, medication_id: int) -> Medication | None:
+    statement = select(Medication).where(
+        Medication.patient_id == patient_id,
+        Medication.id == medication_id)
+    results = session.exec(statement)
+    medication = results.first()
+    return medication
 
 
-def find_posologies(session: Session, patient_id: int, medication_id: int):
-    statement = select(Medication, Posology).where(Medication.patient_id == patient_id, 
-                                                   Medication.id == medication_id, 
-                                                   Posology.medication_id == medication_id)
+def find_medications(session: Session, patient_id: int) -> list["Medication"]:
+    statement = select(Medication).where(
+        (Medication.patient_id == patient_id))
+    results = session.exec(statement)
+    medications = results.all()
+    return medications
+
+
+def find_posology(session: Session, patient_id: int, medication_id: int, posology_id: int) -> Posology | None:
+    statement = select(Medication, Posology).where(
+        Medication.patient_id == patient_id,
+        Medication.id == medication_id,
+        Posology.medication_id == medication_id,
+        Posology.id == posology_id)
+    results = session.exec(statement)
+    data = results.first()
+    if data is not None:
+        _, posology = data
+        return posology
+    return None
+
+
+def find_posologies(session: Session, patient_id: int, medication_id: int) -> list["Posology"]:
+    statement = select(Medication, Posology).where(
+        Medication.patient_id == patient_id,
+        Medication.id == medication_id,
+        Posology.medication_id == medication_id)
     results = session.exec(statement)
     posologies = []
     for _, posology in results.all():
@@ -64,7 +81,7 @@ def find_posologies(session: Session, patient_id: int, medication_id: int):
     return posologies
 
 
-def create_medication(session: Session, medication: Medication):
+def insert_medication(session: Session, medication: Medication) -> Medication | None:
     try:
         session.add(medication)
         session.commit()
@@ -74,7 +91,7 @@ def create_medication(session: Session, medication: Medication):
         return None
 
 
-def create_posology(session: Session, posology: Posology):
+def insert_posology(session: Session, posology: Posology) -> Posology | None:
     try:
         session.add(posology)
         session.commit()
@@ -84,45 +101,22 @@ def create_posology(session: Session, posology: Posology):
         return None
 
 
-def remove_patient(session: Session, patient_id: int):
-    statement = select(Patient).where(Patient.id == patient_id)
-    results = session.exec(statement)
-    patient = results.first()
-    if patient is not None:
-        session.delete(patient)
-        session.commit()
-        return True
-    return False
+def remove_patient(session: Session, patient: Patient):
+    session.delete(patient)
+    session.commit()
 
 
-def remove_medication(session: Session, patient_id: int, medication_id: int):
-    statement = select(Medication).where(
-        Medication.id == medication_id, Medication.patient_id == patient_id)
-    results = session.exec(statement)
-    patient = results.first()
-    if patient is not None:
-        session.delete(patient)
-        session.commit()
-        return True
-    return False
+def remove_medication(session: Session, medication: Medication):
+    session.delete(medication)
+    session.commit()
 
 
-def remove_posology(session: Session, patient_id: int, medication_id: int, posology_id: int):
-    statement = select(Medication, Posology).where(Medication.id == medication_id, 
-                                                   Medication.patient_id == patient_id, 
-                                                   Posology.id == posology_id, 
-                                                   Posology.medication_id == medication_id)
-    results = session.exec(statement)
-    data = results.first()
-    if data is not None:
-        _, posology = data
-        session.delete(posology)
-        session.commit()
-        return True
-    return False
+def remove_posology(session: Session, posology: Posology):
+    session.delete(posology)
+    session.commit()
 
 
-def update_patient_data(session: Session, new_patient: Patient):
+def update_patient_data(session: Session, new_patient: Patient) -> bool:
     patient = find_patient(session, patient_id=new_patient.id)
     if patient is not None:
         patient.name = new_patient.name
@@ -135,9 +129,9 @@ def update_patient_data(session: Session, new_patient: Patient):
     return False
 
 
-def update_medication_data(session: Session, new_medication: Medication):
-    medication = find_medications(
-        session, patient_id=new_medication.patient_id, medication_id=new_medication.id)
+def update_medication_data(session: Session, new_medication: Medication) -> bool:
+    medication = find_medication(
+        session, new_medication.patient_id, new_medication.id)
     if medication is not None:
         medication.name = new_medication.name
         medication.dosage = new_medication.dosage
@@ -148,3 +142,99 @@ def update_medication_data(session: Session, new_medication: Medication):
         session.refresh(medication)
         return True
     return False
+
+
+def insert_intake(session: Session, intake: Intake) -> Intake:
+    session.add(intake)
+    session.commit()
+    session.refresh(intake)
+    return intake
+
+
+def find_intake(session: Session, patient_id: int, medication_id: int, intake_id: int) -> Intake | None:
+
+    statement = select(Medication, Intake).where(
+        Medication.id == medication_id,
+        Medication.patient_id == patient_id,
+        Intake.id == intake_id,
+        Intake.medication_id == medication_id)
+    result = session.exec(statement)
+    data = result.first()
+    if data is not None:
+        _, intake = data
+        return intake
+    return None
+
+
+def find_intakes(session: Session, patient_id: int, **kwargs) -> list["MedicationIntake"]:
+    medication_id = kwargs.get('medication_id', None)
+    start_date = kwargs.get('start_date', None)
+    end_date = kwargs.get('end_date', None)
+    if medication_id is not None:
+        if start_date is not None and end_date is not None:
+            statement = select(Medication, Intake).where(
+                Medication.id == medication_id,
+                Medication.patient_id == patient_id,
+                Intake.medication_id == medication_id,
+                Intake.date >= start_date,
+                Intake.date <= end_date)
+        elif start_date is not None:
+            statement = select(Medication, Intake).where(
+                Medication.id == medication_id,
+                Medication.patient_id == patient_id,
+                Intake.medication_id == medication_id,
+                Intake.date >= start_date)
+        elif end_date is not None:
+            statement = select(Medication, Intake).where(
+                Medication.id == medication_id,
+                Medication.patient_id == patient_id,
+                Intake.medication_id == medication_id,
+                Intake.date <= end_date)
+        else:
+            statement = select(Medication, Intake).where(
+                Medication.id == medication_id,
+                Medication.patient_id == patient_id,
+                Intake.medication_id == medication_id)
+    else:
+        if start_date is not None and end_date is not None:
+            statement = select(Medication, Intake).where(
+                Medication.patient_id == patient_id,
+                Medication.id == Intake.medication_id,
+                Intake.date >= start_date,
+                Intake.date <= end_date)
+        elif start_date is not None:
+            statement = select(Medication, Intake).where(
+                Medication.patient_id == patient_id,
+                Medication.id == Intake.medication_id,
+                Intake.date >= start_date)
+        elif end_date is not None:
+            statement = select(Medication, Intake).where(
+                Medication.patient_id == patient_id,
+                Medication.id == Intake.medication_id,
+                Intake.date <= end_date)
+        else:
+            statement = select(Medication, Intake).where(
+                Medication.patient_id == patient_id,
+                Medication.id == Intake.medication_id,
+            )
+    results = session.exec(statement)
+    medication_and_intakes = results.all()
+    intakes_by_medication = dict()
+    for intake, medication in medication_and_intakes:
+        if medication.id not in intakes_by_medication:
+            intakes_by_medication[medication.id] = MedicationIntake(
+                id=medication.id,
+                name=medication.name,
+                dosage=medication.dosage,
+                start_date=medication.start_date,
+                treatment_duration=medication.treatment_duration,
+                patient_id=medication.patient_id,
+                intakes=[])
+            intakes_by_medication[medication.id].intakes.append(intake)
+
+    return list(intakes_by_medication.values())
+
+
+def delete_intake(session: Session, intake: Intake):
+    session.delete(intake)
+    session.commit()

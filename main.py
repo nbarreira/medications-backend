@@ -39,7 +39,7 @@ app.add_middleware(
           status_code=201,
           responses={201: {"model": Patient}, 409: {"model": Message}})
 def register_patient(patient: Patient, session: Session = Depends(get_session)):
-    registered_patient = create_patient(session, patient)
+    registered_patient = insert_patient(session, patient)
     if registered_patient is not None:
         return registered_patient
     else:
@@ -53,7 +53,7 @@ def add_medication(patient_id: int, medication: Medication, session: Session = D
     try:
         date = datetime.datetime.strptime(medication.start_date, "%Y-%m-%d")
         medication.patient_id = patient_id
-        new_medication = create_medication(session, medication)
+        new_medication = insert_medication(session, medication)
         if new_medication is not None:
             return new_medication
     except ValueError:
@@ -68,9 +68,9 @@ def add_medication(patient_id: int, medication: Medication, session: Session = D
 def add_posology(patient_id: int, medication_id: int, posology: Posology, session: Session = Depends(get_session)):
     if posology.hour >= 0 and posology.hour < 24 and posology.minute >= 0 and posology.minute < 60:
         posology.medication_id = medication_id
-        medication = find_medications(session, patient_id, medication_id)
+        medication = find_medication(session, patient_id, medication_id)
         if medication is not None:
-            new_posology = create_posology(session, posology)
+            new_posology = insert_posology(session, posology)
             if new_posology is not None:
                 return new_posology
     raise HTTPException(
@@ -102,7 +102,7 @@ def get_patient_by_username(username: str = None, session: Session = Depends(get
 @app.get("/patients/{patient_id}/medications/{medication_id}",
          responses={200: {"model": Medication}, 404: {"model": Message}})
 def get_medication(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
-    medication = find_medications(session, patient_id, medication_id)
+    medication = find_medication(session, patient_id, medication_id)
     if medication is not None:
         return medication
     else:
@@ -157,7 +157,10 @@ def update_medication(patient_id: int, medication_id: int, medication: Medicatio
             status_code=204,
             responses={404: {"model": Message}})
 def delete_patients(patient_id: int, session: Session = Depends(get_session)):
-    if not remove_patient(session, patient_id):
+    patient = find_patient(session, patient_id=patient_id)
+    if patient is not None:
+        remove_patient(session, patient)
+    else:
         raise HTTPException(
             status_code=404, detail=f"Patient {patient_id} not found")
 
@@ -166,7 +169,10 @@ def delete_patients(patient_id: int, session: Session = Depends(get_session)):
             status_code=204,
             responses={404: {"model": Message}})
 def delete_medications(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
-    if not remove_medication(session, patient_id, medication_id):
+    medication = find_medication(session, patient_id, medication_id)
+    if medication is not None:
+        remove_medication(session, medication)
+    else:
         raise HTTPException(
             status_code=404, detail=f"Medication {medication_id} not found for patient {patient_id}")
 
@@ -175,24 +181,55 @@ def delete_medications(patient_id: int, medication_id: int, session: Session = D
             status_code=204,
             responses={404: {"model": Message}})
 def delete_posologies(patient_id: int, medication_id: int, posology_id: int, session: Session = Depends(get_session)):
-    if not remove_posology(session, patient_id, medication_id, posology_id):
+    posology = find_posology(session, patient_id, medication_id, posology_id)
+    if posology is not None:
+        remove_posology(session, posology)
+    else:
         raise HTTPException(
             status_code=404, detail=f"Posology {posology_id} not found for patient {patient_id} and medication {medication_id}")
 
 
-@app.post("/patients/{patient_id}/medications/{medication_id}/posologies/{posology_id}/intakes")
-def add_intake(patient_id: int, medication_id: int, posology_id: int, intake: Intake, session: Session = Depends(get_session)):
-    pass
+@app.post("/patients/{patient_id}/medications/{medication_id}/intakes",
+          status_code=201,
+          responses={201: {"model": Intake}, 404: {"model": Message}})
+def add_intake(patient_id: int, medication_id: int, intake: Intake, session: Session = Depends(get_session)):
+    intake.medication_id = medication_id
+    medication = find_medication(session, patient_id, medication_id)
+    if medication is not None:
+        insert_intake(session, intake)
+    else:
+        raise HTTPException(
+            status_code=404, detail=f"Medication {medication_id} not found for patient {patient_id}")
 
-@app.delete("/patients/{patient_id}/medications/{medication_id}/posologies/{posology_id}/intakes/{intake_id}")
-def delete_intake(patient_id: int, medication_id: int, posology_id: int, intake_id: int, session: Session = Depends(get_session)):
-    pass
 
-@app.get("/patients/{patient_id}/medications/{medication_id}/intakes")
+@app.delete("/patients/{patient_id}/medications/{medication_id}/intakes/{intake_id}",
+            status_code=204,
+            responses={404: {"model": Message}})
+def delete_intake(patient_id: int, medication_id: int, intake_id: int, session: Session = Depends(get_session)):
+    intake = find_intake(session, patient_id, medication_id, intake_id)
+    if intake is not None:
+        delete_intake(session, intake)
+    else:
+        raise HTTPException(
+            status_code=404, detail=f"Medication {medication_id} not found for patient {patient_id}")
+
+
+@app.get("/patients/{patient_id}/medications/{medication_id}/intakes",
+         responses={200: {"model": list[MedicationIntake]}, 404: {"model": Message}})
 def get_intakes_by_medicine(patient_id: int, medication_id: int, start_date: str = None, end_date: str = None, session: Session = Depends(get_session)):
-    pass
+    intakes = find_intakes(session, patient_id, medication_id=medication_id, start_date=start_date, end_date=end_date)
+    if len(intakes) > 0:
+        return intakes
+    else:
+        raise HTTPException(
+            status_code=404, detail=f"Intakes for medication {medication_id} and patient {patient_id} not found")
 
-
-@app.get("/patient/{patient_id}/intakes")
+@app.get("/patient/{patient_id}/intakes",
+         responses={200: {"model": list[MedicationIntake]}, 404: {"model": Message}})
 def get_intakes_by_patient(patient_id: int,  start_date: str = None, end_date: str = None, session: Session = Depends(get_session)):
-    pass
+    intakes = find_intakes(session, patient_id, start_date=start_date, end_date=end_date)
+    if len(intakes) > 0:
+        return intakes
+    else:
+        raise HTTPException(
+            status_code=404, detail=f"Intakes for patient {patient_id} not found")
