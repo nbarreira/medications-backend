@@ -1,4 +1,4 @@
-# Medicines backend
+# Medications backend
 
 ## Dependencies
 
