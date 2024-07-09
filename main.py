@@ -112,21 +112,22 @@ def get_medication(patient_id: int, medication_id: int, session: Session = Depen
 @app.get("/patients/{patient_id}/medications",
          responses={200: {"model": list[Medication]}, 404: {"model": Message}})
 def get_all_medications(patient_id: int, session: Session = Depends(get_session)):
+    if find_patient(session, patient_id = patient_id) is None:
+        raise HTTPException(
+            status_code=404, detail=f"Patient {patient_id} not found")
     medications = find_medications(session, patient_id)
-    if len(medications) > 0:
-        return medications
-    raise HTTPException(
-        status_code=404, detail=f"Medications for {patient_id} not found")
+    return medications
 
 
 @app.get("/patients/{patient_id}/medications/{medication_id}/posologies",
          responses={200: {"model": list[Posology]}, 404: {"model": Message}})
 def get_posologies(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
+    if find_medication(session, patient_id, medication_id) is None:
+        raise HTTPException(
+            status_code=404, detail=f"Patient {patient_id} and medication {medication_id} not found")
     posologies = find_posologies(session, patient_id, medication_id)
-    if len(posologies) > 0:
-        return posologies
-    raise HTTPException(
-        status_code=404, detail=f"Posologies for {patient_id} and medication {medication_id} not found")
+    return posologies
+   
 
 
 # Update data
@@ -191,15 +192,20 @@ def delete_posologies(patient_id: int, medication_id: int, posology_id: int, ses
 
 @app.post("/patients/{patient_id}/medications/{medication_id}/intakes",
           status_code=201,
-          responses={201: {"model": Intake}, 404: {"model": Message}})
+          responses={201: {"model": Intake}, 404: {"model": Message}, 422: {"model": Message}})
 def add_intake(patient_id: int, medication_id: int, intake: Intake, session: Session = Depends(get_session)):
     intake.medication_id = medication_id
-    medication = find_medication(session, patient_id, medication_id)
-    if medication is not None:
-        insert_intake(session, intake)
-    else:
-        raise HTTPException(
+    try:
+        date = datetime.datetime.strptime(intake.date, "%Y-%m-%dT%H:%M")
+        medication = find_medication(session, patient_id, medication_id)
+        if medication is not None:
+            intake = insert_intake(session, intake)
+            return intake
+        else:
+            raise HTTPException(
             status_code=404, detail=f"Medication {medication_id} not found for patient {patient_id}")
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid date format {intake.date}. Required format: %Y-%m-%dT%H:%M")
 
 
 @app.delete("/patients/{patient_id}/medications/{medication_id}/intakes/{intake_id}",
@@ -208,28 +214,48 @@ def add_intake(patient_id: int, medication_id: int, intake: Intake, session: Ses
 def delete_intake(patient_id: int, medication_id: int, intake_id: int, session: Session = Depends(get_session)):
     intake = find_intake(session, patient_id, medication_id, intake_id)
     if intake is not None:
-        delete_intake(session, intake)
+        remove_intake(session, intake)
     else:
         raise HTTPException(
             status_code=404, detail=f"Medication {medication_id} not found for patient {patient_id}")
 
 
 @app.get("/patients/{patient_id}/medications/{medication_id}/intakes",
-         responses={200: {"model": list[MedicationIntake]}, 404: {"model": Message}})
+         responses={200: {"model": list[Intake]}, 404: {"model": Message}, 422: {"model": Message}})
 def get_intakes_by_medicine(patient_id: int, medication_id: int, start_date: str = None, end_date: str = None, session: Session = Depends(get_session)):
-    intakes = find_intakes(session, patient_id, medication_id=medication_id, start_date=start_date, end_date=end_date)
-    if len(intakes) > 0:
-        return intakes
-    else:
+    try:
+        if start_date is not None:
+            date = datetime.datetime.strptime(start_date, "%Y-%m-%dT%H:%M")
+        if end_date is not None:
+            date = datetime.datetime.strptime(end_date, "%Y-%m-%dT%H:%M")
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid date format for start_date {start_date}  or end_date {end_date}. Required format: %Y-%m-%dT%H:%M")
+    if find_medication(session, patient_id, medication_id) is None:
         raise HTTPException(
-            status_code=404, detail=f"Intakes for medication {medication_id} and patient {patient_id} not found")
+            status_code=404, detail=f"Medication {medication_id} for patient {patient_id} not found")
 
-@app.get("/patient/{patient_id}/intakes",
-         responses={200: {"model": list[MedicationIntake]}, 404: {"model": Message}})
-def get_intakes_by_patient(patient_id: int,  start_date: str = None, end_date: str = None, session: Session = Depends(get_session)):
-    intakes = find_intakes(session, patient_id, start_date=start_date, end_date=end_date)
-    if len(intakes) > 0:
-        return intakes
+    medication_intakes = find_intakes(session, patient_id, medication_id=medication_id, start_date=start_date, end_date=end_date)
+    if len(medication_intakes) == 1:
+        return medication_intakes[0].intakes_by_medication
     else:
-        raise HTTPException(
-            status_code=404, detail=f"Intakes for patient {patient_id} not found")
+        return []
+    
+        
+@app.get("/patients/{patient_id}/intakes",
+         responses={200: {"model": list[MedicationIntake]}, 404: {"model": Message}, 422: {"model": Message}})
+def get_intakes_by_patient(patient_id: int,  start_date: str = None, end_date: str = None, session: Session = Depends(get_session)):
+    try:
+        if start_date is not None:
+            date = datetime.datetime.strptime(start_date, "%Y-%m-%dT%H:%M")
+        if end_date is not None:
+            date = datetime.datetime.strptime(end_date, "%Y-%m-%dT%H:%M")
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid date format for start_date {start_date}  or end_date {end_date}. Required format: %Y-%m-%dT%H:%M")
+ 
+    if find_patient(session, patient_id = patient_id) is None:
+         raise HTTPException(
+            status_code=404, detail=f"Patient {patient_id} not found")
+
+    intakes = find_intakes(session, patient_id, start_date=start_date, end_date=end_date)
+    return intakes
+       

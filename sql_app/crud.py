@@ -220,7 +220,7 @@ def find_intakes(session: Session, patient_id: int, **kwargs) -> list["Medicatio
     results = session.exec(statement)
     medication_and_intakes = results.all()
     intakes_by_medication = dict()
-    for intake, medication in medication_and_intakes:
+    for medication, intake in medication_and_intakes:
         if medication.id not in intakes_by_medication:
             intakes_by_medication[medication.id] = MedicationIntake(
                 id=medication.id,
@@ -228,13 +228,12 @@ def find_intakes(session: Session, patient_id: int, **kwargs) -> list["Medicatio
                 dosage=medication.dosage,
                 start_date=medication.start_date,
                 treatment_duration=medication.treatment_duration,
-                patient_id=medication.patient_id,
-                intakes=[])
-            intakes_by_medication[medication.id].intakes.append(intake)
+                patient_id=medication.patient_id)
+        intakes_by_medication[medication.id].intakes_by_medication.append(intake)
 
     return list(intakes_by_medication.values())
 
 
-def delete_intake(session: Session, intake: Intake):
+def remove_intake(session: Session, intake: Intake):
     session.delete(intake)
     session.commit()
