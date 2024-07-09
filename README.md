@@ -22,8 +22,8 @@ fastapi run
 
 The database will be automatically created.
 
-The api server can be accessed in the url [http://localhost:8000](http://localhost:8000)
+The api server can be accessed in the url [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 # Docs
 
-Once the server is running, the API documentation is accessible in the following url [http://localhost:8000/docs](http://localhost:8000/docs)
+Once the server is running, the API documentation is accessible in the following url [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
