@@ -5,7 +5,7 @@ import datetime
 
 from sql_app.database import get_session
 from sql_app.models import Patient, Medication, Posology, Message, Intake
-from sql_app.utils import create_db_and_tables
+from sql_app.utils import create_db_and_tables, init_db_if_empty
 from sql_app.crud import *
 from sqlmodel import Session
 
@@ -13,6 +13,7 @@ from sqlmodel import Session
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    init_db_if_empty()
     yield
 
 
