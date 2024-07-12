@@ -22,6 +22,8 @@ def insert_patient(session: Session, patient: Patient) -> Patient | None:
 def find_patient(session: Session, **kwargs) -> Patient | None | list["Patient"]:
     patient_id = kwargs.get('patient_id', None)
     username = kwargs.get('username', None)
+    start_index = kwargs.get('start_index', None)
+    count = kwargs.get('count', None)
     if patient_id:
         statement = select(Patient).where(Patient.id == patient_id)
         results = session.exec(statement)
@@ -32,7 +34,12 @@ def find_patient(session: Session, **kwargs) -> Patient | None | list["Patient"]
         results = session.exec(statement)
         patient = results.first()
         return patient
+        
     statement = select(Patient)
+    if start_index is not None:
+        statement = statement.offset(start_index)
+    if count is not None:
+        statement = statement.limit(count)
     results = session.exec(statement)
     patients = results.all()
     return patients
@@ -166,57 +173,55 @@ def find_intake(session: Session, patient_id: int, medication_id: int, intake_id
     return None
 
 
-def find_intakes(session: Session, patient_id: int, **kwargs) -> list["MedicationIntake"]:
-    medication_id = kwargs.get('medication_id', None)
+def find_intakes(session: Session, medication_id: int, **kwargs) -> list["Intake"]:
     start_date = kwargs.get('start_date', None)
     end_date = kwargs.get('end_date', None)
-    if medication_id is not None:
-        if start_date is not None and end_date is not None:
-            statement = select(Medication, Intake).where(
-                Medication.id == medication_id,
-                Medication.patient_id == patient_id,
-                Intake.medication_id == medication_id,
-                Intake.date >= start_date,
-                Intake.date <= end_date)
-        elif start_date is not None:
-            statement = select(Medication, Intake).where(
-                Medication.id == medication_id,
-                Medication.patient_id == patient_id,
-                Intake.medication_id == medication_id,
-                Intake.date >= start_date)
-        elif end_date is not None:
-            statement = select(Medication, Intake).where(
-                Medication.id == medication_id,
-                Medication.patient_id == patient_id,
-                Intake.medication_id == medication_id,
-                Intake.date <= end_date)
-        else:
-            statement = select(Medication, Intake).where(
-                Medication.id == medication_id,
-                Medication.patient_id == patient_id,
-                Intake.medication_id == medication_id)
+    if start_date is not None and end_date is not None:
+        statement = select(Intake).where(
+            Intake.medication_id == medication_id,
+            Intake.date >= start_date,
+            Intake.date <= end_date)
+    elif start_date is not None:
+        statement = select(Intake).where(
+            Intake.medication_id == medication_id,
+            Intake.date >= start_date)
+    elif end_date is not None:
+        statement = select(Intake).where(
+            Intake.medication_id == medication_id,
+            Intake.date <= end_date)
     else:
-        if start_date is not None and end_date is not None:
-            statement = select(Medication, Intake).where(
-                Medication.patient_id == patient_id,
-                Medication.id == Intake.medication_id,
-                Intake.date >= start_date,
-                Intake.date <= end_date)
-        elif start_date is not None:
-            statement = select(Medication, Intake).where(
-                Medication.patient_id == patient_id,
-                Medication.id == Intake.medication_id,
-                Intake.date >= start_date)
-        elif end_date is not None:
-            statement = select(Medication, Intake).where(
-                Medication.patient_id == patient_id,
-                Medication.id == Intake.medication_id,
-                Intake.date <= end_date)
-        else:
-            statement = select(Medication, Intake).where(
-                Medication.patient_id == patient_id,
-                Medication.id == Intake.medication_id,
-            )
+        statement = select(Intake).where(
+            Intake.medication_id == medication_id)
+    results = session.exec(statement)
+    intakes = results.all()
+    return intakes
+
+
+def find_intakes_by_patient(session: Session, patient_id: int, **kwargs) -> list["MedicationIntake"]:
+    start_date = kwargs.get('start_date', None)
+    end_date = kwargs.get('end_date', None)
+
+    if start_date is not None and end_date is not None:
+        statement = select(Medication, Intake).where(
+            Medication.patient_id == patient_id,
+            Medication.id == Intake.medication_id,
+            Intake.date >= start_date,
+            Intake.date <= end_date)
+    elif start_date is not None:
+        statement = select(Medication, Intake).where(
+            Medication.patient_id == patient_id,
+            Medication.id == Intake.medication_id,
+            Intake.date >= start_date)
+    elif end_date is not None:
+        statement = select(Medication, Intake).where(
+            Medication.patient_id == patient_id,
+            Medication.id == Intake.medication_id,
+            Intake.date <= end_date)
+    else:
+        statement = select(Medication, Intake).where(
+            Medication.patient_id == patient_id,
+            Medication.id == Intake.medication_id,
+        )
     results = session.exec(statement)
     medication_and_intakes = results.all()
     intakes_by_medication = dict()
@@ -228,8 +233,11 @@ def find_intakes(session: Session, patient_id: int, **kwargs) -> list["Medicatio
                 dosage=medication.dosage,
                 start_date=medication.start_date,
                 treatment_duration=medication.treatment_duration,
+                posologies_by_medication=find_posologies(session, patient_id, medication.id),
                 patient_id=medication.patient_id)
-        intakes_by_medication[medication.id].intakes_by_medication.append(intake)
+            
+        intakes_by_medication[medication.id].intakes_by_medication.append(
+            intake)
 
     return list(intakes_by_medication.values())
 

@@ -92,8 +92,8 @@ def get_patient(patient_id: int, session: Session = Depends(get_session)):
 
 @app.get("/patients",
          responses={200: {"model": Patient | list[Patient]}, 404: {"model": Message}})
-def get_patient_by_username(username: str = None, session: Session = Depends(get_session)):
-    patient = find_patient(session, username=username)
+def get_patient_by_username(username: str = None, start_index: int = None, count: int = None, session: Session = Depends(get_session)):
+    patient = find_patient(session, username=username, start_index=start_index, count=count)
     if patient is not None:
         return patient
     else:
@@ -223,7 +223,7 @@ def delete_intake(patient_id: int, medication_id: int, intake_id: int, session: 
 
 @app.get("/patients/{patient_id}/medications/{medication_id}/intakes",
          responses={200: {"model": list[Intake]}, 404: {"model": Message}, 422: {"model": Message}})
-def get_intakes_by_medicine(patient_id: int, medication_id: int, start_date: str = None, end_date: str = None, session: Session = Depends(get_session)):
+def get_intakes_by_medication(patient_id: int, medication_id: int, start_date: str = None, end_date: str = None, session: Session = Depends(get_session)):
     try:
         if start_date is not None:
             date = datetime.datetime.strptime(start_date, "%Y-%m-%dT%H:%M")
@@ -235,12 +235,8 @@ def get_intakes_by_medicine(patient_id: int, medication_id: int, start_date: str
         raise HTTPException(
             status_code=404, detail=f"Medication {medication_id} for patient {patient_id} not found")
 
-    medication_intakes = find_intakes(session, patient_id, medication_id=medication_id, start_date=start_date, end_date=end_date)
-    if len(medication_intakes) == 1:
-        return medication_intakes[0].intakes_by_medication
-    else:
-        return []
-    
+    intakes = find_intakes(session, medication_id, start_date=start_date, end_date=end_date)
+    return intakes
         
 @app.get("/patients/{patient_id}/intakes",
          responses={200: {"model": list[MedicationIntake]}, 404: {"model": Message}, 422: {"model": Message}})
@@ -257,6 +253,6 @@ def get_intakes_by_patient(patient_id: int,  start_date: str = None, end_date: s
          raise HTTPException(
             status_code=404, detail=f"Patient {patient_id} not found")
 
-    intakes = find_intakes(session, patient_id, start_date=start_date, end_date=end_date)
+    intakes = find_intakes_by_patient(session, patient_id, start_date=start_date, end_date=end_date)
     return intakes
        

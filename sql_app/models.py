@@ -46,4 +46,5 @@ class MedicationIntake(BaseModel):
     start_date: str
     treatment_duration: int
     patient_id: int
+    posologies_by_medication: Optional[list["Posology"]] = []
     intakes_by_medication: Optional[list["Intake"]] = []

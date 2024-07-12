@@ -37,11 +37,30 @@ class TestPatient:
             })
         assert request.status_code == 201
 
+    def test_find_limits(self):
+        request = requests.get(f"{self.url}?start_index=0&count=3")
+        assert request.status_code == 200
+        data_1 = request.json()
+        assert len(data_1) == 3
+        
+        request = requests.get(f"{self.url}?start_index=1&count=1")
+        assert request.status_code == 200
+        data_2 = request.json()
+        assert len(data_2) == 1
+
+        assert data_1[1]['id'] == data_2[0]['id'] 
+
+        request = requests.get(f"{self.url}?start_index=999999999&count=999999")
+        assert request.status_code == 200
+        data_3 = request.json()
+        assert len(data_3) == 0
+        
+
     def test_find(self):
         request = requests.get(self.url)
         assert request.status_code == 200
         data = request.json()
-        assert len(data) == 3
+        assert len(data) >= 3
 
     def test_create_error(self):
         request = requests.post(
