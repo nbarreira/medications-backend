@@ -15,7 +15,7 @@ class TestPatient:
             json={
                 'name': 'Name 1',
                 'surname': 'Surname 1',
-                'username': 'username1'
+                'code': 'code1'
             })
         assert request.status_code == 201
 
@@ -24,7 +24,7 @@ class TestPatient:
             json={
                 'name': 'Name 2',
                 'surname': 'Surname 2',
-                'username': 'username2'
+                'code': 'code2'
             })
         assert request.status_code == 201
 
@@ -33,7 +33,7 @@ class TestPatient:
             json={
                 'name': 'Name 3',
                 'surname': 'Surname 3',
-                'username': 'username3'
+                'code': 'code3'
             })
         assert request.status_code == 201
 
@@ -68,17 +68,17 @@ class TestPatient:
             json={
                 'name': 'Name 1',
                 'surname': 'Surname 1',
-                'username': 'username1'
+                'code': 'code1'
             })
         assert request.status_code == 409
 
     def test_update(self):
-        username = 'username2'
-        url_1 = f"{self.url}?username={username}"
+        code = 'code2'
+        url_1 = f"{self.url}?code={code}"
         request = requests.get(url_1)
         assert request.status_code == 200
         data = request.json()
-        assert data["username"] == username
+        assert data["code"] == code
 
         url_2 = f"{TestPatient.url}/{data['id']}"
         request = requests.patch(
@@ -86,7 +86,7 @@ class TestPatient:
             json={
                 'name': 'Name 222',
                 'surname': 'Surname 222',
-                'username': 'username2'
+                'code': 'code2'
             })
         assert request.status_code == 204
 
@@ -102,17 +102,17 @@ class TestPatient:
             json={
                 'name': 'Name 222',
                 'surname': 'Surname 222',
-                'username': 'username2'
+                'code': 'code2'
             })
         assert request.status_code == 404
 
     def test_remove(self):
-        username = 'username3'
-        url_1 = f"{self.url}?username={username}"
+        code = 'code3'
+        url_1 = f"{self.url}?code={code}"
         request = requests.get(url_1)
         assert request.status_code == 200
         data = request.json()
-        assert data["username"] == username
+        assert data["code"] == code
 
         url_2 = f"{self.url}/{data['id']}"
         request = requests.delete(url_2)
@@ -129,15 +129,15 @@ class TestPatient:
     @pytest.fixture(scope="class")
     def teardown_method(self):
         yield "Runing teardown code"
-        username = 'username1'
-        url_1 = f"{self.url}?username={username}"
+        code = 'code1'
+        url_1 = f"{self.url}?code={code}"
         request = requests.get(url_1)
         data = request.json()
         url_2 = f"{self.url}/{data['id']}"
         request = requests.delete(url_2)
 
-        username = 'username2'
-        url_1 = f"{self.url}?username={username}"
+        code = 'code2'
+        url_1 = f"{self.url}?code={code}"
         request = requests.get(url_1)
         data = request.json()
         url_2 = f"{self.url}/{data['id']}"
@@ -155,7 +155,7 @@ class TestMedication:
             json={
                 'name': 'Name 3',
                 'surname': 'Surname 3',
-                'username': 'username3'
+                'code': 'code3'
             })
         data = request.json()
         patient_id_1 = data["id"]
@@ -164,7 +164,7 @@ class TestMedication:
             json={
                 'name': 'Name 4',
                 'surname': 'Surname 4',
-                'username': 'username4'
+                'code': 'code4'
             })
         data = request.json()
         patient_id_2 = data["id"]
@@ -336,7 +336,7 @@ class TestPosology:
             json={
                 'name': 'Name 5',
                 'surname': 'Surname 5',
-                'username': 'username5'
+                'code': 'code5'
             })
         data = request.json()
         patient_id = data["id"]
@@ -478,7 +478,7 @@ class TestIntake:
             json={
                 'name': 'Name 6',
                 'surname': 'Surname 6',
-                'username': 'username6'
+                'code': 'code6'
             })
         data = request.json()
         patient_id_1 = data["id"]
@@ -488,7 +488,7 @@ class TestIntake:
             json={
                 'name': 'Name 7',
                 'surname': 'Surname 7',
-                'username': 'username7'
+                'code': 'code7'
             })
         data = request.json()
         patient_id_2 = data["id"]

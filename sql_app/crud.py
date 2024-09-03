@@ -7,7 +7,7 @@ from .models import Patient, Medication, Posology, Intake, MedicationIntake
 
 
 def insert_patient(session: Session, patient: Patient) -> Patient | None:
-    statement = select(Patient).where(Patient.username == patient.username)
+    statement = select(Patient).where(Patient.code == patient.code)
     results = session.exec(statement)
     registered_patient = results.first()
     if registered_patient is None:
@@ -21,7 +21,7 @@ def insert_patient(session: Session, patient: Patient) -> Patient | None:
 
 def find_patient(session: Session, **kwargs) -> Patient | None | list["Patient"]:
     patient_id = kwargs.get('patient_id', None)
-    username = kwargs.get('username', None)
+    code = kwargs.get('code', None)
     start_index = kwargs.get('start_index', None)
     count = kwargs.get('count', None)
     if patient_id:
@@ -29,8 +29,8 @@ def find_patient(session: Session, **kwargs) -> Patient | None | list["Patient"]
         results = session.exec(statement)
         patient = results.first()
         return patient
-    if username:
-        statement = select(Patient).where(Patient.username == username)
+    if code:
+        statement = select(Patient).where(Patient.code == code)
         results = session.exec(statement)
         patient = results.first()
         return patient
@@ -128,7 +128,7 @@ def update_patient_data(session: Session, new_patient: Patient) -> bool:
     if patient is not None:
         patient.name = new_patient.name
         patient.surname = new_patient.surname
-        patient.username = new_patient.username
+        patient.code = new_patient.code
         session.add(patient)
         session.commit()
         session.refresh(patient)

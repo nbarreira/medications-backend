@@ -6,7 +6,6 @@ from .crud import *
 import random
 import json
 import datetime
-import sys
 
 
 def create_db_and_tables():
@@ -34,7 +33,7 @@ def init_db():
             name = profile['name'].split()
         
             patient = Patient(
-                username=profile['username'],
+                code=fake.ssn(),
                 name=name[0],
                 surname=name[1],
             )
@@ -71,7 +70,7 @@ def init_db():
                         hour = int(time.hour),
                         minute = 0 
                     )
-                    for l in range(5):
+                    for l in range(14):
                         r = random.uniform(0,1)
                         if r < 0.2: # Skip some intakes
                             print("Skipped intake!")

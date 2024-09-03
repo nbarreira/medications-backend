@@ -8,7 +8,7 @@ class Message(BaseModel):
 
 class Patient(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    username: str
+    code: str
     name: Optional[str]  = None
     surname: Optional[str] = None
     medications: list["Medication"] = Relationship(back_populates="patient", sa_relationship_kwargs={"cascade": "delete"})
