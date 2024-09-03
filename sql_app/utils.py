@@ -28,7 +28,7 @@ def init_db():
     
     with Session(engine) as session:
 
-        for i in range(10):
+        for i in range(100):
             profile = fake.simple_profile()
             name = profile['name'].split()
         
