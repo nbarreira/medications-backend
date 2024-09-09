@@ -42,19 +42,19 @@ class TestPatient:
         assert request.status_code == 200
         data_1 = request.json()
         assert len(data_1) == 3
-        
+
         request = requests.get(f"{self.url}?start_index=1&count=1")
         assert request.status_code == 200
         data_2 = request.json()
         assert len(data_2) == 1
 
-        assert data_1[1]['id'] == data_2[0]['id'] 
+        assert data_1[1]['id'] == data_2[0]['id']
 
-        request = requests.get(f"{self.url}?start_index=999999999&count=999999")
+        request = requests.get(
+            f"{self.url}?start_index=999999999&count=999999")
         assert request.status_code == 200
         data_3 = request.json()
         assert len(data_3) == 0
-        
 
     def test_find(self):
         request = requests.get(self.url)
@@ -240,7 +240,6 @@ class TestMedication:
         request = requests.get(url)
         assert request.status_code == 200
         data = request.json()
-        print("__________", data)
         assert data["id"] == medication_id and data["name"] == "Med1" and data["patient_id"] == patient_id_1
 
         url = f"{self.base_url}/{patient_id_2}/medications/{medication_id}"
@@ -250,7 +249,6 @@ class TestMedication:
         url = f"{self.base_url}/{self.non_existent_patient}/medications/{medication_id}"
         request = requests.get(url)
         assert request.status_code == 404
-
 
     def test_update(self, setup_teardown_method):
         patient_id_1, patient_id_2 = setup_teardown_method
@@ -314,13 +312,11 @@ class TestMedication:
         request = requests.delete(url)
         assert request.status_code == 404
 
-
         url = f"{self.base_url}/{patient_id_1}/medications"
         request = requests.get(url)
         assert request.status_code == 200
         data = request.json()
         assert len(data) == 0
-
 
 
 class TestPosology:
@@ -424,6 +420,52 @@ class TestPosology:
         url = f"{self.base_url}/{patient_id}/medications/{self.non_existent_medicine}/posologies"
         request = requests.get(url)
         assert request.status_code == 404
+
+    def test_update(self, setup_teardown_method):
+        patient_id, medicine_id = setup_teardown_method
+        url_1 = f"{self.base_url}/{patient_id}/medications/{medicine_id}/posologies"
+        request = requests.get(url_1)
+        assert request.status_code == 200
+        data = request.json()
+        assert len(data) > 0
+      
+        url_2 = f"{self.base_url}/{patient_id}/medications/{medicine_id}/posologies/{data[0]['id']}"
+        request = requests.patch(url_2, json={
+            'hour': 22,
+            'minute': 22
+        })
+        assert request.status_code == 204
+        request = requests.get(url_1)
+        assert request.status_code == 200
+        data = request.json()
+        assert len(data) > 0
+        assert data[0]['hour'] == 22 and data[0]['minute'] == 22
+
+    def test_update_error(self, setup_teardown_method):
+        patient_id, medicine_id = setup_teardown_method
+
+        url_1 = f"{self.base_url}/{patient_id}/medications/{medicine_id}/posologies"
+        request = requests.get(url_1)
+        assert request.status_code == 200
+        data = request.json()
+        assert len(data) > 0
+      
+        url_2 = f"{self.base_url}/{patient_id}/medications/{medicine_id}/posologies/{data[0]['id']}"
+        request = requests.patch(url_2, json={
+            'hour': 30,
+            'minute': 66
+        })
+        assert request.status_code == 424
+
+        url_2 = f"{self.base_url}/{patient_id}/medications/{medicine_id}/posologies/{self.non_existent_posology}"
+        request = requests.patch(url_2, json={
+            'hour': 22,
+            'minute': 22
+        })
+        assert request.status_code == 404
+       
+        
+    
 
     def test_remove(self, setup_teardown_method):
         patient_id, medicine_id = setup_teardown_method
@@ -589,7 +631,6 @@ class TestIntake:
         )
         assert request.status_code == 201
 
-
     def test_insert_error(self, setup_teardown_method):
         patient_id_1, _, med_id_1, _, med_id_3 = setup_teardown_method
 
@@ -601,7 +642,7 @@ class TestIntake:
             }
         )
         assert request.status_code == 404
- 
+
         url = f"{self.base_url}/{self.non_existent_patient}/medications/{med_id_3}/intakes"
         request = requests.post(
             url,
@@ -610,7 +651,6 @@ class TestIntake:
             }
         )
         assert request.status_code == 404
-
 
         url = f"{self.base_url}/{patient_id_1}/medications/{self.non_existent_medicine}/intakes"
         request = requests.post(
@@ -630,7 +670,6 @@ class TestIntake:
         )
         assert request.status_code == 422
 
-
     def test_find(self, setup_teardown_method):
         patient_id_1, patient_id_2, med_id_1, med_id_2, med_id_3 = setup_teardown_method
 
@@ -644,9 +683,11 @@ class TestIntake:
         request = requests.get(url)
         assert request.status_code == 200
         data = request.json()
-        assert len(data) == 2 
-        assert "intakes_by_medication" in data[0] and len(data[0]["intakes_by_medication"]) == 3
-        assert "intakes_by_medication" in data[1] and len(data[1]["intakes_by_medication"]) == 1
+        assert len(data) == 2
+        assert "intakes_by_medication" in data[0] and len(
+            data[0]["intakes_by_medication"]) == 3
+        assert "intakes_by_medication" in data[1] and len(
+            data[1]["intakes_by_medication"]) == 1
 
         url = f"{self.base_url}/{patient_id_1}/medications/{med_id_1}/intakes?start_date=2024-09-06T09:30&end_date=2024-09-06T16:30"
         request = requests.get(url)
@@ -671,9 +712,6 @@ class TestIntake:
         assert request.status_code == 200
         data = request.json()
         assert len(data) == 0
-        
-
-
 
     def test_find_error(self, setup_teardown_method):
         patient_id_1, _, med_id_1, _, med_id_3 = setup_teardown_method
@@ -681,11 +719,11 @@ class TestIntake:
         url = f"{self.base_url}/{patient_id_1}/medications/{med_id_3}/intakes"
         request = requests.get(url)
         assert request.status_code == 404
-      
+
         url = f"{self.base_url}/{self.non_existent_patient}/medications/{med_id_3}/intakes"
         request = requests.get(url)
         assert request.status_code == 404
-      
+
         url = f"{self.base_url}/{patient_id_1}/medications/{self.non_existent_medicine}/intakes"
         request = requests.get(url)
         assert request.status_code == 404
@@ -697,20 +735,15 @@ class TestIntake:
         url = f"{self.base_url}/{patient_id_1}/medications/{med_id_1}/intakes?start_date=no-date&end_date=1000"
         request = requests.get(url)
         assert request.status_code == 422
-        
+
         url = f"{self.base_url}/{patient_id_1}/medications/{med_id_1}/intakes?start_date=2000-10-20"
         request = requests.get(url)
         assert request.status_code == 422
-        
+
         url = f"{self.base_url}/{patient_id_1}/medications/{med_id_1}/intakes?end_date=1000"
         request = requests.get(url)
         assert request.status_code == 422
 
-        
-        
-
-     
-    
     def test_delete(self, setup_teardown_method):
         patient_id_1, patient_id_2, med_id_1, med_id_2, med_id_3 = setup_teardown_method
 
@@ -719,7 +752,7 @@ class TestIntake:
         assert request.status_code == 200
         data = request.json()
         assert len(data) == 3
-    
+
         intake_id = data[0]["id"]
         url_2 = f"{self.base_url}/{patient_id_1}/medications/{med_id_1}/intakes/{intake_id}"
         request = requests.delete(url_2)
@@ -759,7 +792,3 @@ class TestIntake:
         url_2 = f"{self.base_url}/{patient_id_1}/medications/{med_id_2}/intakes/{self.non_existent_intake}"
         request = requests.delete(url_2)
         assert request.status_code == 404
-
-
-
-

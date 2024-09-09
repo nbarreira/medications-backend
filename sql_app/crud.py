@@ -107,6 +107,14 @@ def insert_posology(session: Session, posology: Posology) -> Posology | None:
     except IntegrityError:
         return None
 
+def update_posology_data(session: Session, posology: Posology) -> bool:
+    try:
+        session.add(posology)
+        session.commit()
+        session.refresh(posology)
+        return True
+    except IntegrityError:
+        return False
 
 def remove_patient(session: Session, patient: Patient):
     session.delete(patient)

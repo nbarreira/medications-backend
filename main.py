@@ -196,6 +196,24 @@ def get_posologies(patient_id: int, medication_id: int, session: Session = Depen
     return posologies
 
 
+@app.patch(("/patients/{patient_id}/medications/{medication_id}/posologies/{posology_id}"),  tags=["posologies"],
+            status_code=204,
+            responses={404: {"model": Message}, 422: {"model": Message}})
+def update_posology(patient_id: int, medication_id: int, posology_id: int, posology: Posology, session: Session = Depends(get_session)):
+    if posology.hour >= 0 and posology.hour < 24 and posology.minute >= 0 and posology.minute < 60:
+        old_posology = find_posology(session, patient_id, medication_id, posology_id)
+        if old_posology is not None:
+            old_posology.hour = posology.hour
+            old_posology.minute = posology.minute
+            update_posology_data(session, old_posology)
+        else:
+            raise HTTPException(
+                status_code=404, detail=f"Posology {posology_id} not found for patient {patient_id} and medication {medication_id}")
+    else:
+        raise HTTPException(
+            status_code=424, detail=f"Posology {posology} could not be updated for medication {medication_id} and patient {patient_id}: invalid data")
+
+
 @app.delete(("/patients/{patient_id}/medications/{medication_id}/posologies/{posology_id}"),  tags=["posologies"],
             status_code=204,
             responses={404: {"model": Message}})
