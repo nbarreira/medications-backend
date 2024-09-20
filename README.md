@@ -9,7 +9,7 @@ Install these programs in your operating system:
 After that, install the following python libraries using the provided requeriments file:
 
 ```
-python3 -m pip install -r requeriments.txt
+python3 -m pip install -r requirements.txt
 ```
 
 # Run the server
