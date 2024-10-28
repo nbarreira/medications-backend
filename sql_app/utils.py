@@ -23,7 +23,7 @@ def init_db():
     dosages = [0.25, 0.5, 0.75, 1, 1.5, 2]
     posology_delta = [6, 8, 12, 24]
 
-    base_intake_date = datetime.datetime(2024, 9, 1)
+    base_intake_date = datetime.datetime(2024, 10, 1)
     day_delta = datetime.timedelta(days=1)
     
     with Session(engine) as session:
@@ -42,11 +42,12 @@ def init_db():
             for j in range(random.randint(1,5)):
                 name = medications[random.randint(0, len(medications))]['nombre']
                 idx = random.randint(0,len(dosages)-1)
+                start_date = fake.date_between(datetime.datetime(2024,9,1), datetime.datetime.now())
                 medication = Medication(
                     name=name, 
                     dosage=dosages[idx],
                     treatment_duration=random.randint(5, 100), 
-                    start_date=fake.date_between(),
+                    start_date=start_date,
                     patient_id = patient.id,
                     )
                 medication = insert_medication(session, medication)
@@ -64,9 +65,9 @@ def init_db():
 
                     
                     intake_date = datetime.datetime(
-                        year=base_intake_date.year,
-                        month= base_intake_date.month,
-                        day=base_intake_date.day,   
+                        year=start_date.year,
+                        month= start_date.month,
+                        day=start_date.day,   
                         hour = int(time.hour),
                         minute = 0 
                     )
