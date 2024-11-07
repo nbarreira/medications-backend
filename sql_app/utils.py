@@ -17,7 +17,7 @@ def create_db_and_tables():
 
 def init_db():
     fake = Faker()
-    f = open('medications.json', 'r')
+    f = open('medications.json', 'r', encoding='utf8')
     medications = json.load(f)
     f.close()
     dosages = [0.25, 0.5, 0.75, 1, 1.5, 2]
@@ -42,7 +42,7 @@ def init_db():
             for j in range(random.randint(1,5)):
                 name = medications[random.randint(0, len(medications))]['nombre']
                 idx = random.randint(0,len(dosages)-1)
-                start_date = fake.date_between(datetime.datetime(2024,9,1), datetime.datetime.now())
+                start_date = fake.date_between(datetime.datetime(2024,10,1), datetime.datetime.now())
                 medication = Medication(
                     name=name, 
                     dosage=dosages[idx],
