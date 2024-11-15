@@ -68,7 +68,6 @@ def add_patient(patient: Patient, session: Session = Depends(get_session)):
 @app.get("/patients/{patient_id}", tags=["patients"],
          responses={200: {"model": Patient}, 404: {"model": Message}})
 def get_patient(patient_id: int, session: Session = Depends(get_session)):
-    time.sleep(2)
     patient = find_patient(session, patient_id=patient_id)
     if patient is not None:
         return patient
@@ -79,7 +78,6 @@ def get_patient(patient_id: int, session: Session = Depends(get_session)):
 @app.get("/patients", tags=["patients"],
          responses={200: {"model": Patient | list[Patient]}, 404: {"model": Message}})
 def get_patient_by_code(code: str = None, start_index: int = None, count: int = None, session: Session = Depends(get_session)):
-    time.sleep(2)
     patient = find_patient(
         session, code=code, start_index=start_index, count=count)
     if patient is not None:
@@ -116,7 +114,6 @@ def delete_patients(patient_id: int, session: Session = Depends(get_session)):
           status_code=201,
           responses={201: {"model": Medication}, 422: {"model": Message}})
 def add_medication(patient_id: int, medication: Medication, session: Session = Depends(get_session)):
-    time.sleep(2)
     try:
         date = datetime.datetime.strptime(medication.start_date, "%Y-%m-%d")
         medication.patient_id = patient_id
@@ -132,7 +129,6 @@ def add_medication(patient_id: int, medication: Medication, session: Session = D
 @app.get("/patients/{patient_id}/medications/{medication_id}", tags=["medications"],
          responses={200: {"model": Medication}, 404: {"model": Message}})
 def get_medication(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
-    time.sleep(2)
     medication = find_medication(session, patient_id, medication_id)
     if medication is not None:
         return medication
@@ -143,7 +139,6 @@ def get_medication(patient_id: int, medication_id: int, session: Session = Depen
 @app.get("/patients/{patient_id}/medications", tags=["medications"],
          responses={200: {"model": list[Medication]}, 404: {"model": Message}})
 def get_all_medications(patient_id: int, session: Session = Depends(get_session)):
-    time.sleep(2)
     if find_patient(session, patient_id=patient_id) is None:
         raise HTTPException(
             status_code=404, detail=f"Patient {patient_id} not found")
@@ -155,7 +150,6 @@ def get_all_medications(patient_id: int, session: Session = Depends(get_session)
            status_code=204,
            responses={404: {"model": Message}})
 def update_medication(patient_id: int, medication_id: int, medication: Medication, session: Session = Depends(get_session)):
-    time.sleep(2)
     medication.id = medication_id
     medication.patient_id = patient_id
     if not update_medication_data(session, medication):
@@ -167,7 +161,6 @@ def update_medication(patient_id: int, medication_id: int, medication: Medicatio
             status_code=204,
             responses={404: {"model": Message}})
 def delete_medications(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
-    time.sleep(2)
     medication = find_medication(session, patient_id, medication_id)
     if medication is not None:
         remove_medication(session, medication)
@@ -182,7 +175,6 @@ def delete_medications(patient_id: int, medication_id: int, session: Session = D
           status_code=201,
           responses={201: {"model": Posology}, 422: {"model": Message}})
 def add_posology(patient_id: int, medication_id: int, posology: Posology, session: Session = Depends(get_session)):
-    time.sleep(2)
     if posology.hour >= 0 and posology.hour < 24 and posology.minute >= 0 and posology.minute < 60:
         posology.medication_id = medication_id
         medication = find_medication(session, patient_id, medication_id)
@@ -197,7 +189,6 @@ def add_posology(patient_id: int, medication_id: int, posology: Posology, sessio
 @app.get("/patients/{patient_id}/medications/{medication_id}/posologies", tags=["posologies"],
          responses={200: {"model": list[Posology]}, 404: {"model": Message}})
 def get_posologies(patient_id: int, medication_id: int, session: Session = Depends(get_session)):
-    time.sleep(2)
     if find_medication(session, patient_id, medication_id) is None:
         raise HTTPException(
             status_code=404, detail=f"Patient {patient_id} and medication {medication_id} not found")
@@ -209,7 +200,6 @@ def get_posologies(patient_id: int, medication_id: int, session: Session = Depen
             status_code=204,
             responses={404: {"model": Message}, 422: {"model": Message}})
 def update_posology(patient_id: int, medication_id: int, posology_id: int, posology: Posology, session: Session = Depends(get_session)):
-    time.sleep(2)
     if posology.hour >= 0 and posology.hour < 24 and posology.minute >= 0 and posology.minute < 60:
         old_posology = find_posology(session, patient_id, medication_id, posology_id)
         if old_posology is not None:
@@ -228,7 +218,6 @@ def update_posology(patient_id: int, medication_id: int, posology_id: int, posol
             status_code=204,
             responses={404: {"model": Message}})
 def delete_posologies(patient_id: int, medication_id: int, posology_id: int, session: Session = Depends(get_session)):
-    time.sleep(2)
     posology = find_posology(session, patient_id, medication_id, posology_id)
     if posology is not None:
         remove_posology(session, posology)
